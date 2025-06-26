@@ -99,7 +99,7 @@ export default function App() {
         offset: -10,
         color: "#333",
         font: { weight: "bold", size: 12 },
-        formatter: (val) => `${val.toFixed(2)}%`,
+        formatter: (val) => ${val.toFixed(2)}%,
       },
     },
     onClick: (evt, elements) => {
@@ -115,7 +115,7 @@ export default function App() {
         beginAtZero: true,
         max: 20,
         ticks: {
-          callback: (val) => `${val}%`,
+          callback: (val) => ${val}%,
           font: { size: 14 },
         },
         grid: { color: "#e0e0e0" },
@@ -157,68 +157,85 @@ export default function App() {
         </h2>
       </div>
 
-      <div className="ranking-container">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          gap: "40px",
+          flexWrap: "wrap",
+          padding: "20px",
+        }}
+      >
         {/* Tabla */}
-        <div className="table-container" style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              borderCollapse: "collapse",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-              borderRadius: "8px",
-              overflow: "hidden",
-              backgroundColor: "#fff",
-              width: "100%",
-              minWidth: "280px",
-              maxWidth: "400px",
-            }}
-          >
-            <thead>
-              <tr style={{ backgroundColor: "#f4f4f4" }}>
-                <th style={{ padding: "10px 20px", textAlign: "center" }}>Orden</th>
-                <th style={{ padding: "10px 20px", textAlign: "center" }}>Nombre</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topData.map((item, index) => {
-                let medal = "";
-                if (index === 0) medal = "🥇";
-                else if (index === 1) medal = "🥈";
-                else if (index === 2) medal = "🥉";
+        <table
+          style={{
+            borderCollapse: "collapse",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            borderRadius: "8px",
+            overflow: "hidden",
+            backgroundColor: "#fff",
+          }}
+        >
+          <thead>
+            <tr style={{ backgroundColor: "#f4f4f4" }}>
+              <th style={{ padding: "10px 20px", textAlign: "center" }}>
+                Orden
+              </th>
+              <th style={{ padding: "10px 20px", textAlign: "center" }}>
+                Nombre
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {topData.map((item, index) => {
+              let medal = "";
+              if (index === 0) medal = "🥇";
+              else if (index === 1) medal = "🥈";
+              else if (index === 2) medal = "🥉";
 
-                const isSelected = selectedIndex === index;
+              const isSelected = selectedIndex === index;
 
-                return (
-                  <tr
-                    key={item.orden}
-                    onMouseEnter={() => setHoveredIndex(index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    onClick={() =>
-                      setSelectedIndex(selectedIndex === index ? null : index)
-                    }
-                    style={{
-                      backgroundColor: isSelected
-                        ? "#ffe082"
-                        : hoveredIndex === index
-                        ? "#fef3c7"
-                        : "transparent",
-                      cursor: "pointer",
-                      transition: "background-color 0.2s ease",
-                      fontWeight: index < 3 ? "bold" : "normal",
-                    }}
-                  >
-                    <td style={{ padding: "8px 20px", textAlign: "center" }}>
-                      {medal || item.orden}
-                    </td>
-                    <td style={{ padding: "8px 20px" }}>{item.nombre}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+              return (
+                <tr
+                  key={item.orden}
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  onClick={() =>
+                    setSelectedIndex(selectedIndex === index ? null : index)
+                  }
+                  style={{
+                    backgroundColor: isSelected
+                      ? "#ffe082"
+                      : hoveredIndex === index
+                      ? "#fef3c7"
+                      : "transparent",
+                    cursor: "pointer",
+                    transition: "background-color 0.2s ease",
+                    fontWeight: index < 3 ? "bold" : "normal",
+                  }}
+                >
+                  <td style={{ padding: "8px 20px", textAlign: "center" }}>
+                    {medal || item.orden}
+                  </td>
+                  <td style={{ padding: "8px 20px" }}>{item.nombre}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
         {/* Gráfico */}
-        <div className="chart-container">
+        <div
+          style={{
+            background: "#fafafa",
+            borderRadius: "16px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            padding: "20px",
+            maxWidth: "1000px",
+            flex: "1",
+          }}
+        >
           <Bar data={chartData} options={chartOptions} />
         </div>
       </div>
