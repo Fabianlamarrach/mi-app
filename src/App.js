@@ -8,6 +8,7 @@ import "@fontsource/montserrat";
 import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/700.css";
 
+// Registra el plugin ChartDataLabels globalmente
 Chart.register(ChartDataLabels);
 
 const SHEET_URL =
@@ -17,6 +18,15 @@ export default function App() {
   const [data, setData] = useState([]);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetch(SHEET_URL)
@@ -57,13 +67,19 @@ export default function App() {
   }, []);
 
   const topData = data.slice(0, 20);
+  // En móvil mostramos los primeros 10, en desktop todos los disponibles (hasta 20)
+  const chartDataLimited = isMobile ? data.slice(0, 10) : data.slice(0, 20);
 
   const chartData = {
-    labels: topData.map((e) => e.nombre),
+    labels: chartDataLimited.map((e) => {
+      return isMobile && e.nombre.length > 12
+      ? e.nombre.substring(0, 12) + '...'
+      : e.nombre;
+    }),
     datasets: [
       {
         label: "% de Ganancia",
-        data: topData.map((e) => e.porcentaje),
+        data: chartDataLimited.map((e) => e.porcentaje),
         backgroundColor: (context) => {
           const index = context.dataIndex;
           const isSelected = selectedIndex === null || selectedIndex === index;
@@ -73,20 +89,44 @@ export default function App() {
           gradient.addColorStop(1, isSelected ? "#ff6f00" : "rgba(255,111,0,0.2)");
           return gradient;
         },
-        borderRadius: 10,
-        barThickness: 30,
-        categoryPercentage: 0.5,
-        barPercentage: 1.0,
+        borderRadius: 8,
+        barThickness: isMobile ? 25 : 'flex',
+        maxBarThickness: isMobile ? 35 : 80,
+        categoryPercentage: isMobile ? 0.8 : 0.7,
+        barPercentage: isMobile ? 0.9 : 0.7,
       },
     ],
   };
 
   const chartOptions = {
-    indexAxis: "x",
+    indexAxis: isMobile ? "y" : "x",
     responsive: true,
+    maintainAspectRatio: false,
+    // Configuración específica para el tamaño del canvas
+    layout: {
+      padding: {
+        top: isMobile ? 10 : 20,
+        bottom: isMobile ? 10 : 40, // Más espacio abajo en desktop para los nombres
+        left: isMobile ? 10 : 20,
+        right: isMobile ? 10 : 20,
+      }
+    },
     plugins: {
+      title: {
+    display: true,
+    text: "Ranking de % de Ganancia por Persona",
+    font: {
+      size: isMobile ? 12 : 20,
+      weight: 'bold',
+    },
+    padding: {
+      top: isMobile ? 2 : 10,
+      bottom: isMobile ? 6 : 20,
+    },
+    color: "#333",
+    },
       legend: {
-        display: true,
+        display: !isMobile, // Ocultar leyenda en móvil para ahorrar espacio
         position: "top",
         labels: {
           font: { size: 14 },
@@ -94,12 +134,23 @@ export default function App() {
         },
       },
       datalabels: {
-        anchor: "end",
-        align: "start",
-        offset: -10,
+        anchor: isMobile ? "center" : "end",
+        align: isMobile ? "center" : "start",
+        offset: isMobile ? 0 : -10,
         color: "#333",
-        font: { weight: "bold", size: 12 },
-        formatter: (val) => ${val.toFixed(2)}%,
+        font: { 
+          weight: "bold", 
+          size: isMobile ? 10 : 12 
+        },
+        formatter: (val) => `${val.toFixed(1)}%`,
+        display: function(context) {
+          // En móvil, mostrar solo si hay pocas barras
+          if (isMobile) {
+            const barCount = context.chart.data.labels.length;
+            return barCount <= 10;
+          }
+          return true;
+        },
       },
     },
     onClick: (evt, elements) => {
@@ -115,23 +166,43 @@ export default function App() {
         beginAtZero: true,
         max: 20,
         ticks: {
-          callback: (val) => ${val}%,
-          font: { size: 14 },
+          callback: (val) => isMobile ? `${val + 1}` : `${val}%`,
+          font: { 
+            size: isMobile ? 10 : 12,
+            weight: 'bold' 
+          },
+          color: "#333",
+          padding: isMobile ? 5 : 10,
+          maxTicksLimit: isMobile ? 10 : undefined,
         },
-        grid: { color: "#e0e0e0" },
+        grid: { 
+          color: "#e0e0e0",
+          display: !isMobile
+        },
       },
       x: {
+        beginAtZero: true,
         ticks: {
-          autoSkip: false,
+          font: { 
+            size: isMobile ? 10 : 12,
+            weight: 'bold' 
+          },
+          color: "#333",
+          padding: isMobile ? 5 : 8,
+          maxTicksLimit: isMobile ? 10 : undefined,
+          // Configuración específica para mostrar nombres en desktop
           maxRotation: 45,
-          minRotation: 45,
-          font: { size: 13 },
+          minRotation: 30,
+          autoSkip: false,
         },
-        grid: { display: false },
+        grid: { 
+          display: true, 
+          color: "#e0e0e0" 
+        },
       },
     },
     animation: {
-      duration: 1000,
+      duration: isMobile ? 500 : 1000, // Animación más rápida en móvil
       easing: "easeOutBounce",
     },
   };
@@ -145,6 +216,7 @@ export default function App() {
           justifyContent: "center",
           gap: "12px",
           margin: "20px 0",
+          flexWrap: "wrap", // Para que se adapte en móvil
         }}
       >
         <img
@@ -152,91 +224,81 @@ export default function App() {
           alt="Logo empresa"
           style={{ height: "40px", objectFit: "contain" }}
         />
-        <h2 style={{ margin: 0, color: "#333" }}>
+        <h2 style={{ 
+          margin: 0, 
+          color: "#333",
+          fontSize: isMobile ? "18px" : "24px",
+          textAlign: "center"
+        }}>
           Ranking Mensual de Ganancia en HYDRA S.A.S.
         </h2>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          gap: "40px",
-          flexWrap: "wrap",
-          padding: "20px",
-        }}
-      >
+      <div className="ranking-container">
         {/* Tabla */}
-        <table
-          style={{
-            borderCollapse: "collapse",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-            borderRadius: "8px",
-            overflow: "hidden",
-            backgroundColor: "#fff",
-          }}
-        >
-          <thead>
-            <tr style={{ backgroundColor: "#f4f4f4" }}>
-              <th style={{ padding: "10px 20px", textAlign: "center" }}>
-                Orden
-              </th>
-              <th style={{ padding: "10px 20px", textAlign: "center" }}>
-                Nombre
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {topData.map((item, index) => {
-              let medal = "";
-              if (index === 0) medal = "🥇";
-              else if (index === 1) medal = "🥈";
-              else if (index === 2) medal = "🥉";
+        <div className="table-container">
+          <table
+            style={{
+              borderCollapse: "collapse",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+              borderRadius: "8px",
+              overflow: "hidden",
+              backgroundColor: "#fff",
+              width: "100%",
+              minWidth: "280px",
+              maxWidth: "400px",
+            }}
+          >
+            <thead>
+              <tr style={{ backgroundColor: "#f4f4f4" }}>
+                <th style={{ padding: "10px 20px", textAlign: "center" }}>Orden</th>
+                <th style={{ padding: "10px 20px", textAlign: "center" }}>Nombre</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topData.map((item, index) => {
+                let medal = "";
+                if (index === 0) medal = "🥇";
+                else if (index === 1) medal = "🥈";
+                else if (index === 2) medal = "🥉";
 
-              const isSelected = selectedIndex === index;
+                const isSelected = selectedIndex === index;
 
-              return (
-                <tr
-                  key={item.orden}
-                  onMouseEnter={() => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  onClick={() =>
-                    setSelectedIndex(selectedIndex === index ? null : index)
-                  }
-                  style={{
-                    backgroundColor: isSelected
-                      ? "#ffe082"
-                      : hoveredIndex === index
-                      ? "#fef3c7"
-                      : "transparent",
-                    cursor: "pointer",
-                    transition: "background-color 0.2s ease",
-                    fontWeight: index < 3 ? "bold" : "normal",
-                  }}
-                >
-                  <td style={{ padding: "8px 20px", textAlign: "center" }}>
-                    {medal || item.orden}
-                  </td>
-                  <td style={{ padding: "8px 20px" }}>{item.nombre}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr
+                    key={item.orden}
+                    onMouseEnter={() => setHoveredIndex(index)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                    onClick={() =>
+                      setSelectedIndex(selectedIndex === index ? null : index)
+                    }
+                    style={{
+                      backgroundColor: isSelected
+                        ? "#ffe082"
+                        : hoveredIndex === index
+                        ? "#fef3c7"
+                        : "transparent",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                      fontWeight: index < 3 ? "bold" : "normal",
+                    }}
+                  >
+                    <td style={{ padding: "8px 20px", textAlign: "center" }}>
+                      {medal || item.orden}
+                    </td>
+                    <td style={{ padding: "8px 20px" }}>{item.nombre}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         {/* Gráfico */}
-        <div
-          style={{
-            background: "#fafafa",
-            borderRadius: "16px",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-            padding: "20px",
-            maxWidth: "1000px",
-            flex: "1",
-          }}
-        >
-          <Bar data={chartData} options={chartOptions} />
+        <div className="chart-container">
+          <div className="chart-wrapper">
+            <Bar data={chartData} options={chartOptions} />
+          </div>
         </div>
       </div>
 
