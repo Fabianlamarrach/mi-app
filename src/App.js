@@ -12,7 +12,7 @@ import "@fontsource/montserrat/700.css";
 Chart.register(ChartDataLabels);
 
 const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSNxsbAUqoxJNXs9Atk0zBfpbvxqHx2YpEQ1-fGSFYB3yZ-N4pAqMitScikOCnaKkVKKfADzn1xrUuj/pub?gid=0&single=true&output=csv";
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSNxsbAUqoxJNXs9Atk0zBfpbvxqHx2YpEQ1-fGSFYB3yZ-N4pAqMitScikOCnaKkVKKfADzn1xrUuj/pub?gid=1118989069&single=true&output=csv";
 
 export default function App() {
   const [data, setData] = useState([]);
