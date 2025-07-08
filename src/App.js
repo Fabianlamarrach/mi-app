@@ -8,7 +8,6 @@ import "@fontsource/montserrat";
 import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/700.css";
 
-// Registra el plugin ChartDataLabels globalmente
 Chart.register(ChartDataLabels);
 
 const SHEET_URL =
@@ -16,6 +15,7 @@ const SHEET_URL =
 
 export default function App() {
   const [data, setData] = useState([]);
+  const [rankingAnterior, setRankingAnterior] = useState([]);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -24,8 +24,8 @@ export default function App() {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -60,21 +60,36 @@ export default function App() {
               .filter((e) => e !== null)
               .sort((a, b) => a.orden - b.orden);
 
+            // Cargar ranking anterior desde localStorage
+            const anterior = JSON.parse(localStorage.getItem("rankingAnterior") || "[]");
+            setRankingAnterior(anterior);
+
+            // Guardar ranking actual como nuevo "anterior"
+            localStorage.setItem("rankingAnterior", JSON.stringify(parsed));
+
             setData(parsed);
           },
         });
       });
   }, []);
 
+  function obtenerMovimiento(nombre, actualOrden) {
+    const anterior = rankingAnterior.find((p) => p.nombre === nombre);
+    if (!anterior) return null;
+
+    if (actualOrden < anterior.orden) return "sube";
+    if (actualOrden > anterior.orden) return "baja";
+    return null;
+  }
+
   const topData = data.slice(0, 20);
-  // En móvil mostramos los primeros 10, en desktop todos los disponibles (hasta 20)
   const chartDataLimited = isMobile ? data.slice(0, 10) : data.slice(0, 20);
 
   const chartData = {
     labels: chartDataLimited.map((e) => {
       return isMobile && e.nombre.length > 12
-      ? e.nombre.substring(0, 12) + '...'
-      : e.nombre;
+        ? e.nombre.substring(0, 12) + "..."
+        : e.nombre;
     }),
     datasets: [
       {
@@ -90,7 +105,7 @@ export default function App() {
           return gradient;
         },
         borderRadius: 8,
-        barThickness: isMobile ? 25 : 'flex',
+        barThickness: isMobile ? 25 : "flex",
         maxBarThickness: isMobile ? 35 : 80,
         categoryPercentage: isMobile ? 0.8 : 0.7,
         barPercentage: isMobile ? 0.9 : 0.7,
@@ -102,31 +117,30 @@ export default function App() {
     indexAxis: isMobile ? "y" : "x",
     responsive: true,
     maintainAspectRatio: false,
-    // Configuración específica para el tamaño del canvas
     layout: {
       padding: {
         top: isMobile ? 10 : 20,
-        bottom: isMobile ? 10 : 40, // Más espacio abajo en desktop para los nombres
+        bottom: isMobile ? 10 : 40,
         left: isMobile ? 10 : 20,
         right: isMobile ? 10 : 20,
-      }
+      },
     },
     plugins: {
       title: {
-    display: true,
-    text: "Ranking de % de Ganancia por Persona",
-    font: {
-      size: isMobile ? 12 : 20,
-      weight: 'bold',
-    },
-    padding: {
-      top: isMobile ? 2 : 10,
-      bottom: isMobile ? 6 : 20,
-    },
-    color: "#333",
-    },
+        display: true,
+        text: "Ranking de % de Ganancia por Persona",
+        font: {
+          size: isMobile ? 12 : 20,
+          weight: "bold",
+        },
+        padding: {
+          top: isMobile ? 2 : 10,
+          bottom: isMobile ? 6 : 20,
+        },
+        color: "#333",
+      },
       legend: {
-        display: !isMobile, // Ocultar leyenda en móvil para ahorrar espacio
+        display: !isMobile,
         position: "top",
         labels: {
           font: { size: 14 },
@@ -138,13 +152,12 @@ export default function App() {
         align: isMobile ? "center" : "start",
         offset: isMobile ? 0 : -10,
         color: "#333",
-        font: { 
-          weight: "bold", 
-          size: isMobile ? 10 : 12 
+        font: {
+          weight: "bold",
+          size: isMobile ? 10 : 12,
         },
         formatter: (val) => `${val.toFixed(1)}%`,
-        display: function(context) {
-          // En móvil, mostrar solo si hay pocas barras
+        display: function (context) {
           if (isMobile) {
             const barCount = context.chart.data.labels.length;
             return barCount <= 10;
@@ -166,43 +179,42 @@ export default function App() {
         beginAtZero: true,
         max: 20,
         ticks: {
-          callback: (val) => isMobile ? `${val + 1}` : `${val}%`,
-          font: { 
+          callback: (val) => (isMobile ? `${val + 1}` : `${val}%`),
+          font: {
             size: isMobile ? 10 : 12,
-            weight: 'bold' 
+            weight: "bold",
           },
           color: "#333",
           padding: isMobile ? 5 : 10,
           maxTicksLimit: isMobile ? 10 : undefined,
         },
-        grid: { 
+        grid: {
           color: "#e0e0e0",
-          display: !isMobile
+          display: !isMobile,
         },
       },
       x: {
         beginAtZero: true,
         ticks: {
-          font: { 
+          font: {
             size: isMobile ? 10 : 12,
-            weight: 'bold' 
+            weight: "bold",
           },
           color: "#333",
           padding: isMobile ? 5 : 8,
           maxTicksLimit: isMobile ? 10 : undefined,
-          // Configuración específica para mostrar nombres en desktop
-          maxRotation: 45,
-          minRotation: 30,
+          maxRotation: 60,
+          minRotation: 35,
           autoSkip: false,
         },
-        grid: { 
-          display: true, 
-          color: "#e0e0e0" 
+        grid: {
+          display: true,
+          color: "#e0e0e0",
         },
       },
     },
     animation: {
-      duration: isMobile ? 500 : 1000, // Animación más rápida en móvil
+      duration: isMobile ? 500 : 1000,
       easing: "easeOutBounce",
     },
   };
@@ -216,7 +228,7 @@ export default function App() {
           justifyContent: "center",
           gap: "12px",
           margin: "20px 0",
-          flexWrap: "wrap", // Para que se adapte en móvil
+          flexWrap: "wrap",
         }}
       >
         <img
@@ -224,18 +236,19 @@ export default function App() {
           alt="Logo empresa"
           style={{ height: "40px", objectFit: "contain" }}
         />
-        <h2 style={{ 
-          margin: 0, 
-          color: "#333",
-          fontSize: isMobile ? "18px" : "24px",
-          textAlign: "center"
-        }}>
+        <h2
+          style={{
+            margin: 0,
+            color: "#333",
+            fontSize: isMobile ? "18px" : "24px",
+            textAlign: "center",
+          }}
+        >
           Ranking Mensual de Ganancia en HYDRA S.A.S.
         </h2>
       </div>
 
       <div className="ranking-container">
-        {/* Tabla */}
         <div className="table-container">
           <table
             style={{
@@ -283,8 +296,25 @@ export default function App() {
                       fontWeight: index < 3 ? "bold" : "normal",
                     }}
                   >
-                    <td style={{ padding: "8px 20px", textAlign: "center" }}>
+                    <td
+                      style={{
+                        padding: "8px 20px",
+                        textAlign: "center",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
                       {medal || item.orden}
+                      {(() => {
+                        const movimiento = obtenerMovimiento(item.nombre, item.orden);
+                        if (movimiento === "sube")
+                          return <span style={{ color: "green" }}>⬆️</span>;
+                        if (movimiento === "baja")
+                          return <span style={{ color: "red" }}>⬇️</span>;
+                        return null;
+                      })()}
                     </td>
                     <td style={{ padding: "8px 20px" }}>{item.nombre}</td>
                   </tr>
@@ -294,7 +324,6 @@ export default function App() {
           </table>
         </div>
 
-        {/* Gráfico */}
         <div className="chart-container">
           <div className="chart-wrapper">
             <Bar data={chartData} options={chartOptions} />
@@ -302,7 +331,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Indicador "En vivo" */}
       <div
         style={{
           position: "fixed",
