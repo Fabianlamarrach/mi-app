@@ -67,6 +67,7 @@ export default function App() {
             // Guardar ranking actual como nuevo "anterior"
             localStorage.setItem("rankingAnterior", JSON.stringify(parsed));
 
+            const dataFiltrada = parsed.filter((e) => e.nombre !== "Real Juan.Carlos");
             setData(parsed);
           },
         });
